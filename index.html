@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>婚礼邀请</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
-    <link rel="stylesheet" href="css/swiper.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/css/swiper.min.css">
     <link rel="stylesheet" href="css/animate.min.css">
     <link rel="stylesheet" href="vendor/iakit/style.css">
     <link rel="stylesheet" href="css/bulma.min.css">
@@ -314,8 +314,8 @@
     <img src="./images/upArrow.png" id="array" class="resize"/>
 </div>
 <script src="js/jquery-3.2.1.min.js"></script>
-<script src="js/swiper.min.js"></script>
-<script src="js/swiper.animate.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.4.2/js/swiper.jquery.min.js"></script>
 <script src="vendor/iakit/index.js"></script>
 <script>
     scaleW = window.innerWidth / 320;
@@ -336,17 +336,7 @@
         zoom: true,
         pagination: '.swiper-pagination',
         paginationType: 'progress',
-        onInit: function (swiper) {
-            swiperAnimateCache(swiper);
-            swiperAnimate(swiper);
-        },
-        onSlideChangeEnd: function (swiper) {
-            swiperAnimate(swiper);
-        },
-        onTransitionEnd: function (swiper) {
-            swiperAnimate(swiper);
-        },
-
+        
         watchSlidesProgress: true,
 
         onProgress: function (swiper) {
@@ -478,65 +468,97 @@
     }
 
     function submitBlessing() {
-        const nameInput = document.getElementById('blessing_name');
-        const contentInput = document.getElementById('blessing_content');
-        
-        const name = nameInput.value.trim();
-        const content = contentInput.value.trim();
-        
-        if (!name) {
-            iakit.toast.showCenter('请输入您的姓名');
-            return;
+        try {
+            const nameInput = document.getElementById('blessing_name');
+            const contentInput = document.getElementById('blessing_content');
+            
+            if (!nameInput || !contentInput) {
+                alert('页面元素加载失败，请刷新页面重试');
+                return;
+            }
+            
+            const name = nameInput.value.trim();
+            const content = contentInput.value.trim();
+            
+            if (!name) {
+                if (typeof iakit !== 'undefined' && iakit.toast) {
+                    iakit.toast.showCenter('请输入您的姓名');
+                } else {
+                    alert('请输入您的姓名');
+                }
+                return;
+            }
+            
+            if (!content) {
+                if (typeof iakit !== 'undefined' && iakit.toast) {
+                    iakit.toast.showCenter('请输入祝福内容');
+                } else {
+                    alert('请输入祝福内容');
+                }
+                return;
+            }
+            
+            const blessing = {
+                name: name,
+                content: content,
+                time: formatTime(new Date())
+            };
+            
+            saveBlessing(blessing);
+            
+            nameInput.value = '';
+            contentInput.value = '';
+            
+            if (typeof iakit !== 'undefined' && iakit.toast) {
+                iakit.toast.showCenter('祝福发送成功！');
+            } else {
+                alert('祝福发送成功！');
+            }
+            
+            renderBlessings();
+        } catch (error) {
+            console.error('提交祝福失败:', error);
+            alert('提交祝福失败，请重试');
         }
-        
-        if (!content) {
-            iakit.toast.showCenter('请输入祝福内容');
-            return;
-        }
-        
-        const blessing = {
-            name: name,
-            content: content,
-            time: formatTime(new Date())
-        };
-        
-        saveBlessing(blessing);
-        
-        nameInput.value = '';
-        contentInput.value = '';
-        
-        iakit.toast.showCenter('祝福发送成功！');
-        
-        renderBlessings();
     }
 
     function renderBlessings() {
         const blessingList = document.getElementById('blessing_list');
-        const blessings = getBlessings();
-        
-        if (blessings.length === 0) {
-            blessingList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无祝福，快来写下第一条祝福吧！</div>';
+        if (!blessingList) {
+            console.warn('祝福列表元素不存在');
             return;
         }
         
-        let html = '';
-        blessings.forEach(blessing => {
-            html += `
-                <div class="blessing_item">
-                    <div class="blessing_name">${escapeHtml(blessing.name)}</div>
-                    <div class="blessing_content">${escapeHtml(blessing.content)}</div>
-                    <div class="blessing_time">${blessing.time}</div>
-                </div>
-            `;
-        });
-        
-        if (blessings.length > 3) {
-            html += html;
+        try {
+            const blessings = getBlessings();
+            
+            if (blessings.length === 0) {
+                blessingList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无祝福，快来写下第一条祝福吧！</div>';
+                return;
+            }
+            
+            let html = '';
+            blessings.forEach(blessing => {
+                html += `
+                    <div class="blessing_item">
+                        <div class="blessing_name">${escapeHtml(blessing.name)}</div>
+                        <div class="blessing_content">${escapeHtml(blessing.content)}</div>
+                        <div class="blessing_time">${blessing.time}</div>
+                    </div>
+                `;
+            });
+            
+            if (blessings.length > 3) {
+                html += html;
+            }
+            
+            blessingList.innerHTML = html;
+            
+            startScrollAnimation();
+        } catch (error) {
+            console.error('渲染祝福列表失败:', error);
+            blessingList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">加载祝福失败，请刷新页面重试</div>';
         }
-        
-        blessingList.innerHTML = html;
-        
-        startScrollAnimation();
     }
 
     function escapeHtml(text) {
@@ -562,42 +584,63 @@
     }
 
     function openMap() {
-        const { latitude, longitude, name, address } = WEDDING_LOCATION;
-        
-        const mapUrl = `https://uri.amap.com/marker?position=${longitude},${latitude}&name=${encodeURIComponent(name)}&src=wedding_invitation&coordinate=gaode&callnative=0`;
-        
-        window.open(mapUrl, '_blank');
+        try {
+            const { latitude, longitude, name } = WEDDING_LOCATION;
+            
+            const mapUrl = `https://uri.amap.com/marker?position=${longitude},${latitude}&name=${encodeURIComponent(name)}&src=wedding_invitation&coordinate=gaode&callnative=0`;
+            
+            const newWindow = window.open(mapUrl, '_blank');
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                alert('弹出窗口被阻止，请允许弹出窗口后重试');
+            }
+        } catch (error) {
+            console.error('打开地图失败:', error);
+            alert('打开地图失败，请重试');
+        }
     }
 
     function openNavigation() {
-        const { latitude, longitude, name, address } = WEDDING_LOCATION;
-        
-        const u = navigator.userAgent;
-        const isAndroid = u.indexOf('Android') > -1 || u.indexOf('Linux') > -1;
-        const isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
-        
-        let navUrl = '';
-        
-        if (isIOS) {
-            navUrl = `iosamap://navi?sourceApplication=wedding_invitation&poiname=${encodeURIComponent(name)}&lat=${latitude}&lon=${longitude}&dev=1&style=2`;
-        } else if (isAndroid) {
-            navUrl = `androidamap://navi?sourceApplication=wedding_invitation&poiname=${encodeURIComponent(name)}&lat=${latitude}&lon=${longitude}&dev=1&style=2`;
-        }
-        
-        if (navUrl) {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = navUrl;
-            document.body.appendChild(iframe);
+        try {
+            const { latitude, longitude, name } = WEDDING_LOCATION;
             
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-                const webUrl = `https://uri.amap.com/navigation?to=${longitude},${latitude},${encodeURIComponent(name)}&mode=car&coordinate=gaode&callnative=1`;
-                window.open(webUrl, '_blank');
-            }, 2000);
-        } else {
+            const u = navigator.userAgent;
+            const isAndroid = u.indexOf('Android') > -1 || u.indexOf('Linux') > -1;
+            const isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+            
+            let navUrl = '';
+            
+            if (isIOS) {
+                navUrl = `iosamap://navi?sourceApplication=wedding_invitation&poiname=${encodeURIComponent(name)}&lat=${latitude}&lon=${longitude}&dev=1&style=2`;
+            } else if (isAndroid) {
+                navUrl = `androidamap://navi?sourceApplication=wedding_invitation&poiname=${encodeURIComponent(name)}&lat=${latitude}&lon=${longitude}&dev=1&style=2`;
+            }
+            
             const webUrl = `https://uri.amap.com/navigation?to=${longitude},${latitude},${encodeURIComponent(name)}&mode=car&coordinate=gaode&callnative=1`;
-            window.open(webUrl, '_blank');
+            
+            if (navUrl) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = navUrl;
+                document.body.appendChild(iframe);
+                
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        document.body.removeChild(iframe);
+                    }
+                    const newWindow = window.open(webUrl, '_blank');
+                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                        alert('弹出窗口被阻止，请允许弹出窗口后重试');
+                    }
+                }, 2000);
+            } else {
+                const newWindow = window.open(webUrl, '_blank');
+                if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                    alert('弹出窗口被阻止，请允许弹出窗口后重试');
+                }
+            }
+        } catch (error) {
+            console.error('打开导航失败:', error);
+            alert('打开导航失败，请重试');
         }
     }
 
