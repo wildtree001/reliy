@@ -211,6 +211,57 @@
             </div>
         </div>
 
+        <div class="swiper-slide" id="blessing_wall">
+            <div class="imgbox">
+                <img src="show/mobile_09.jpg" alt="">
+                <div class="blessing_container">
+                    <div class="blessing_title ani resize" swiper-animate-effect="fadeIn" swiper-animate-duration="0.5s" swiper-animate-delay=".5s">
+                        祝福墙
+                    </div>
+                    <div class="blessing_form">
+                        <div class="field">
+                            <div class="control">
+                                <input class="input blessing_input" type="text" placeholder="您的姓名" id="blessing_name">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <textarea class="textarea blessing_textarea" placeholder="写下您的祝福..." id="blessing_content"></textarea>
+                            </div>
+                        </div>
+                        <div class="field is-grouped is-flex-mobile">
+                            <div class="control">
+                                <button class="btn blessing_btn" onclick="submitBlessing()">发送祝福</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="blessing_scroll">
+                        <div class="blessing_list" id="blessing_list">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="swiper-slide" id="map_page">
+            <div class="imgbox">
+                <img src="show/mobile_01.jpg" alt="">
+                <div class="map_container">
+                    <div class="map_title ani resize" swiper-animate-effect="fadeIn" swiper-animate-duration="0.5s" swiper-animate-delay=".5s">
+                        婚礼地址
+                    </div>
+                    <div class="map_info">
+                        <div class="map_address">北京市朝阳区婚礼酒店</div>
+                        <div class="map_time">2019年1月1日 12:00</div>
+                    </div>
+                    <div class="map_buttons">
+                        <button class="btn map_btn" onclick="openMap()">查看地图</button>
+                        <button class="btn map_btn" onclick="openNavigation()">一键导航</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="swiper-slide" id="back_cover">
             <div class="imgbox">
                 <img src="show/mobile_end.jpg" alt="">
@@ -358,8 +409,200 @@
         }
     }
 
-    $(document).ready(function() {
+    const WEDDING_LOCATION = {
+        name: '北京市朝阳区婚礼酒店',
+        address: '北京市朝阳区建国路88号',
+        latitude: 39.9042,
+        longitude: 116.4074
+    };
 
+    const BLESSING_KEY = 'wedding_blessings';
+
+    function getDefaultBlessings() {
+        return [
+            {
+                name: '张三',
+                content: '祝你们新婚快乐，百年好合！愿你们的爱情像钻石一样永恒闪耀！',
+                time: '2019-01-01 10:00'
+            },
+            {
+                name: '李四',
+                content: '恭喜恭喜！愿你们的生活充满欢声笑语，每一天都是情人节！',
+                time: '2019-01-01 10:30'
+            },
+            {
+                name: '王五',
+                content: '执子之手，与子偕老。祝福你们永远幸福，相爱一生！',
+                time: '2019-01-01 11:00'
+            },
+            {
+                name: '赵六',
+                content: '愿你们的爱情如同美酒，越陈越香。祝新婚快乐，早生贵子！',
+                time: '2019-01-01 11:30'
+            },
+            {
+                name: '孙七',
+                content: '在这美好的日子里，祝你们新婚愉快，幸福美满，永远相爱！',
+                time: '2019-01-01 12:00'
+            }
+        ];
+    }
+
+    function getBlessings() {
+        let blessings = localStorage.getItem(BLESSING_KEY);
+        if (!blessings) {
+            blessings = getDefaultBlessings();
+            localStorage.setItem(BLESSING_KEY, JSON.stringify(blessings));
+            return blessings;
+        }
+        return JSON.parse(blessings);
+    }
+
+    function saveBlessing(blessing) {
+        let blessings = getBlessings();
+        blessings.unshift(blessing);
+        if (blessings.length > 100) {
+            blessings = blessings.slice(0, 100);
+        }
+        localStorage.setItem(BLESSING_KEY, JSON.stringify(blessings));
+        return blessings;
+    }
+
+    function formatTime(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
+    function submitBlessing() {
+        const nameInput = document.getElementById('blessing_name');
+        const contentInput = document.getElementById('blessing_content');
+        
+        const name = nameInput.value.trim();
+        const content = contentInput.value.trim();
+        
+        if (!name) {
+            iakit.toast.showCenter('请输入您的姓名');
+            return;
+        }
+        
+        if (!content) {
+            iakit.toast.showCenter('请输入祝福内容');
+            return;
+        }
+        
+        const blessing = {
+            name: name,
+            content: content,
+            time: formatTime(new Date())
+        };
+        
+        saveBlessing(blessing);
+        
+        nameInput.value = '';
+        contentInput.value = '';
+        
+        iakit.toast.showCenter('祝福发送成功！');
+        
+        renderBlessings();
+    }
+
+    function renderBlessings() {
+        const blessingList = document.getElementById('blessing_list');
+        const blessings = getBlessings();
+        
+        if (blessings.length === 0) {
+            blessingList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无祝福，快来写下第一条祝福吧！</div>';
+            return;
+        }
+        
+        let html = '';
+        blessings.forEach(blessing => {
+            html += `
+                <div class="blessing_item">
+                    <div class="blessing_name">${escapeHtml(blessing.name)}</div>
+                    <div class="blessing_content">${escapeHtml(blessing.content)}</div>
+                    <div class="blessing_time">${blessing.time}</div>
+                </div>
+            `;
+        });
+        
+        if (blessings.length > 3) {
+            html += html;
+        }
+        
+        blessingList.innerHTML = html;
+        
+        startScrollAnimation();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function startScrollAnimation() {
+        const blessingList = document.getElementById('blessing_list');
+        const blessingScroll = document.querySelector('.blessing_scroll');
+        
+        blessingList.classList.remove('scrolling');
+        
+        setTimeout(() => {
+            const listHeight = blessingList.offsetHeight;
+            const scrollHeight = blessingScroll.offsetHeight;
+            
+            if (listHeight > scrollHeight) {
+                blessingList.classList.add('scrolling');
+            }
+        }, 100);
+    }
+
+    function openMap() {
+        const { latitude, longitude, name, address } = WEDDING_LOCATION;
+        
+        const mapUrl = `https://uri.amap.com/marker?position=${longitude},${latitude}&name=${encodeURIComponent(name)}&src=wedding_invitation&coordinate=gaode&callnative=0`;
+        
+        window.open(mapUrl, '_blank');
+    }
+
+    function openNavigation() {
+        const { latitude, longitude, name, address } = WEDDING_LOCATION;
+        
+        const u = navigator.userAgent;
+        const isAndroid = u.indexOf('Android') > -1 || u.indexOf('Linux') > -1;
+        const isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+        
+        let navUrl = '';
+        
+        if (isIOS) {
+            navUrl = `iosamap://navi?sourceApplication=wedding_invitation&poiname=${encodeURIComponent(name)}&lat=${latitude}&lon=${longitude}&dev=1&style=2`;
+        } else if (isAndroid) {
+            navUrl = `androidamap://navi?sourceApplication=wedding_invitation&poiname=${encodeURIComponent(name)}&lat=${latitude}&lon=${longitude}&dev=1&style=2`;
+        }
+        
+        if (navUrl) {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = navUrl;
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                const webUrl = `https://uri.amap.com/navigation?to=${longitude},${latitude},${encodeURIComponent(name)}&mode=car&coordinate=gaode&callnative=1`;
+                window.open(webUrl, '_blank');
+            }, 2000);
+        } else {
+            const webUrl = `https://uri.amap.com/navigation?to=${longitude},${latitude},${encodeURIComponent(name)}&mode=car&coordinate=gaode&callnative=1`;
+            window.open(webUrl, '_blank');
+        }
+    }
+
+    $(document).ready(function() {
+        renderBlessings();
 
         let musicPlay = document.getElementById("music_tag").play();
 
